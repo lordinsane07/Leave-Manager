@@ -56,7 +56,7 @@ export const BURNOUT_CATEGORIES = {
 };
 
 // ━━━ API base URL ━━━
-export const API_BASE_URL = '/api';
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '/api';
 
 // ━━━ Pagination defaults ━━━
 export const DEFAULT_PAGE_SIZE = 10;
