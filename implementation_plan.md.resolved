@@ -1,0 +1,114 @@
+# AI-Powered Employee Leave Management System
+
+Full-stack enterprise HR system: Node.js/Express backend + React/Vite frontend + MongoDB, featuring AI-powered leave advising, burnout detection, NLP leave parsing, real-time notifications via Socket.io, PWA support, voice commands, and a "Carbon & Citrus" design theme.
+
+## User Review Required
+
+> [!IMPORTANT]
+> This is a **100+ file project** spanning backend and frontend. Building file-by-file with confirmation between each would take an extremely long time. I'll instead build the entire system in batches — backend first, then frontend — creating all files with full implementations (no TODOs/placeholders). You'll be able to review the complete working codebase.
+
+> [!WARNING]
+> **MongoDB Required**: You'll need a MongoDB instance (local or Atlas) to run the backend. The `.env.example` documents all required environment variables.
+
+> [!NOTE]
+> **AI Features**: The AI service gracefully falls back to rule-based logic if no OpenAI API key is provided. All AI features work without an API key.
+
+## Proposed Changes
+
+### Backend — Config & Entry Point
+
+#### [NEW] [.env.example](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/.env.example)
+All environment variables: MongoDB URI, JWT secrets, Cloudinary, OpenAI API key, port, frontend URL.
+
+#### [NEW] [package.json](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/package.json)
+Dependencies: express, mongoose, jsonwebtoken, bcryptjs, socket.io, express-validator, express-rate-limit, helmet, cors, winston, dotenv, openai, nodemailer, cloudinary, multer, date-fns.
+
+#### [NEW] [server.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/server.js)
+Express app setup with all middleware, route mounting, Socket.io init, MongoDB connection, error handling.
+
+#### [NEW] [config/db.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/config/db.js)
+#### [NEW] [config/cloudinary.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/config/cloudinary.js)
+#### [NEW] [config/socket.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/config/socket.js)
+
+---
+
+### Backend — Models (7 files)
+
+User, Leave, Department, Holiday, Notification, AuditLog, AIInsight — all with fields as specified in requirements, Mongoose indexes, virtuals, and pre-save hooks.
+
+---
+
+### Backend — Middleware (6 files)
+
+authMiddleware (JWT verify), roleMiddleware (restrictTo), errorHandler, rateLimiter, requestLogger, auditLogger.
+
+---
+
+### Backend — Controllers & Routes (9 each, 18 files total)
+
+auth, leave, user, department, analytics, notification, holiday, AI, audit — each with full CRUD, pagination, filtering, sorting.
+
+---
+
+### Backend — Services (5 files)
+
+aiService (OpenAI with rule-based fallback), burnoutService, nlpService (regex + date-fns parsing), emailService, leaveBalanceService.
+
+---
+
+### Backend — Utils (7 files) + Seeder
+
+ApiError, ApiResponse, leaveCalculator, validators, dateUtils, logger (winston), seedData + seeder.js.
+
+---
+
+### Frontend — Setup
+
+#### [NEW] [package.json](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/package.json)
+#### [NEW] [vite.config.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/vite.config.js)
+#### [NEW] [tailwind.config.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/tailwind.config.js)
+#### [NEW] [postcss.config.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/postcss.config.js)
+#### [NEW] [index.html](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/index.html)
+#### [NEW] [src/index.css](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/src/index.css)
+Full "Carbon & Citrus" theme with CSS variables for light/dark, animations, typography.
+
+---
+
+### Frontend — App Shell, Contexts, Hooks, Services, Utils (~25 files)
+
+All context providers, custom hooks (auth, leave, toast, socket, AI, voice, PWA), API service layer with axios interceptors, utility functions.
+
+---
+
+### Frontend — Components (~35 files)
+
+UI primitives (Button, Input, Badge, Card, Modal, Toast, Loader, etc.), layout (Sidebar, TopBar, PageWrapper, ProtectedRoute), leave components, analytics charts, AI components, user & notification components.
+
+---
+
+### Frontend — Pages (10 files)
+
+LoginPage, RegisterPage, EmployeeDashboard, ManagerDashboard, AdminPanel, ProfilePage, LeaveHistoryPage, AIInsightsPage, AuditLogPage, NotFoundPage.
+
+---
+
+### PWA & Documentation
+
+#### [NEW] [manifest.json](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/manifest.json)
+#### [NEW] [sw.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/sw.js)
+#### [NEW] [README.md](file:///d:/debmr2/PROJECTS/leavemanagementsystem/README.md)
+
+## Verification Plan
+
+### Automated Tests
+1. **Backend startup**: `cd backend && npm install && node -e "require('./server.js')"` — verify no import/syntax errors
+2. **Frontend build**: `cd frontend && npm install && npm run build` — verify Vite compiles without errors
+
+### Manual Verification
+1. Start MongoDB, run `npm run seed` to populate data, then `npm run dev` on backend
+2. Run `npm run dev` on frontend, open browser
+3. Verify login with seeded credentials (admin@company.com / Admin@123)
+4. Navigate through Employee, Manager, Admin dashboards
+5. Test leave application flow, approval/rejection, and real-time notifications
+6. Toggle dark/light theme
+7. Test NLP leave input and AI features

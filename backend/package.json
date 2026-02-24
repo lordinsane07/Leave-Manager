@@ -1,0 +1,39 @@
+{
+  "name": "leave-management-backend",
+  "version": "1.0.0",
+  "description": "AI-Powered Employee Leave Management System — Backend API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seeder.js",
+    "seed:destroy": "node seeder.js --destroy"
+  },
+  "keywords": [
+    "leave-management",
+    "hr",
+    "employee",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.5",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "express-rate-limit": "^7.2.0",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.2.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.12",
+    "openai": "^4.28.0",
+    "socket.io": "^4.7.4",
+    "winston": "^3.12.0"
+  }
+}

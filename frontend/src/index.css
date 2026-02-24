@@ -1,0 +1,384 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CARBON & CITRUS — Design System
+   Light: "Warm Paper" | Dark: "Ember Dark"
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+:root {
+  /* ━━━ Light Theme: Warm Paper ━━━ */
+  --bg-base: #F5F0EB;
+  --bg-surface: #FFFDF9;
+  --bg-elevated: #FFFFFF;
+  --sidebar-bg: #1C1917;
+  --sidebar-text: #E8E0D5;
+  --sidebar-muted: #9C8A7E;
+  --accent-primary: #E85D04;
+  --accent-hover: #C44D00;
+  --accent-success: #2D6A4F;
+  --accent-danger: #C1121F;
+  --accent-warning: #F4A261;
+  --accent-info: #1B6CA8;
+  --text-primary: #1C1917;
+  --text-secondary: #6B5E52;
+  --text-muted: #9C8A7E;
+  --border: #DDD5CB;
+  --border-focus: #E85D04;
+  --shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.08);
+  --shadow-md: 0 4px 16px rgba(28, 25, 23, 0.12);
+  --shadow-lg: 0 12px 40px rgba(28, 25, 23, 0.16);
+}
+
+.dark {
+  /* ━━━ Dark Theme: Ember Dark ━━━ */
+  --bg-base: #141210;
+  --bg-surface: #1E1B18;
+  --bg-elevated: #272320;
+  --sidebar-bg: #0F0D0B;
+  --sidebar-text: #C9BDB3;
+  --sidebar-muted: #6B5E52;
+  --accent-primary: #FF7C3A;
+  --accent-hover: #FF9558;
+  --accent-success: #52B788;
+  --accent-danger: #FF4D6D;
+  --accent-warning: #FFB347;
+  --accent-info: #4DA6E8;
+  --text-primary: #EDE8E3;
+  --text-secondary: #B8ADA6;
+  --text-muted: #6B5E52;
+  --border: #2E2925;
+  --border-focus: #FF7C3A;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ━━━ Base Reset & Globals ━━━ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  transition: background-color 300ms ease, color 300ms ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ━━━ Smooth Theme Transitions ━━━ */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: ease;
+}
+
+/* Disable transitions on animations to avoid conflicts */
+[class*="animate-"] * {
+  transition: none !important;
+}
+
+/* ━━━ Scrollbar Styling ━━━ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ━━━ Typography Utility Classes ━━━ */
+.font-display {
+  font-family: 'DM Serif Display', Georgia, serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ━━━ Floating Label Input Pattern ━━━ */
+.floating-input {
+  border: none;
+  border-bottom: 2px solid var(--border);
+  background: transparent;
+  padding: 12px 0 8px;
+  font-size: 1rem;
+  width: 100%;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 200ms ease;
+}
+
+.floating-input:focus {
+  border-bottom-color: var(--border-focus);
+}
+
+.floating-label {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  font-size: 1rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: all 200ms ease;
+}
+
+.floating-input:focus~.floating-label,
+.floating-input:not(:placeholder-shown)~.floating-label {
+  top: -8px;
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+}
+
+/* ━━━ Skeleton Shimmer Effect ━━━ */
+.skeleton {
+  background: linear-gradient(90deg,
+      var(--bg-surface) 25%,
+      var(--border) 50%,
+      var(--bg-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ━━━ Staggered Fade-Up Animation ━━━ */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeUp 0.4s ease-out forwards;
+}
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dynamic stagger delays via CSS custom property */
+.stagger-item:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.stagger-item:nth-child(2) {
+  animation-delay: 0.10s;
+}
+
+.stagger-item:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.stagger-item:nth-child(4) {
+  animation-delay: 0.20s;
+}
+
+.stagger-item:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.stagger-item:nth-child(6) {
+  animation-delay: 0.30s;
+}
+
+.stagger-item:nth-child(7) {
+  animation-delay: 0.35s;
+}
+
+.stagger-item:nth-child(8) {
+  animation-delay: 0.40s;
+}
+
+/* ━━━ Status Badge Colors ━━━ */
+.badge-pending {
+  background-color: rgba(244, 162, 97, 0.15);
+  color: #D4860A;
+}
+
+.dark .badge-pending {
+  background-color: rgba(255, 179, 71, 0.15);
+  color: #FFB347;
+}
+
+.badge-approved {
+  background-color: rgba(45, 106, 79, 0.12);
+  color: #2D6A4F;
+}
+
+.dark .badge-approved {
+  background-color: rgba(82, 183, 136, 0.15);
+  color: #52B788;
+}
+
+.badge-rejected {
+  background-color: rgba(193, 18, 31, 0.10);
+  color: #C1121F;
+}
+
+.dark .badge-rejected {
+  background-color: rgba(255, 77, 109, 0.15);
+  color: #FF4D6D;
+}
+
+.badge-cancelled {
+  background-color: rgba(156, 138, 126, 0.15);
+  color: #6B5E52;
+}
+
+.dark .badge-cancelled {
+  background-color: rgba(107, 94, 82, 0.20);
+  color: #9C8A7E;
+}
+
+/* ━━━ Card Hover Effect ━━━ */
+.card-hover {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ━━━ Button Active Press ━━━ */
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* ━━━ Circular Burnout Gauge ━━━ */
+.burnout-gauge {
+  transform: rotate(-90deg);
+}
+
+.burnout-gauge circle {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.burnout-gauge .gauge-bg {
+  stroke: var(--border);
+}
+
+.burnout-gauge .gauge-fill {
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
+  transition: stroke-dashoffset 1s ease-out;
+}
+
+/* ━━━ Table Row Hover ━━━ */
+.table-row-hover {
+  transition: background-color 120ms ease;
+}
+
+.table-row-hover:hover {
+  background-color: var(--bg-elevated);
+}
+
+/* ━━━ Toast slide-in ━━━ */
+.toast-enter {
+  animation: slideInRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ━━━ Modal Scale Animation ━━━ */
+.modal-enter {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ━━━ Page transition ━━━ */
+.page-enter {
+  animation: fadeUp 0.3s ease-out forwards;
+}
+
+/* ━━━ Success Flash ━━━ */
+@keyframes successFlash {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-flash {
+  animation: successFlash 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ━━━ Fade In (for bulk action bar, etc.) ━━━ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* ━━━ Success Checkmark in Toasts ━━━ */
+.toast-success-icon {
+  animation: successFlash 0.4s ease-out forwards;
+}

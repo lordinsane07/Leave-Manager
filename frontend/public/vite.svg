@@ -1,0 +1,12 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="64" fill="#f96b24"/>
+  <text x="128" y="176" 
+        font-family="system-ui, -apple-system, sans-serif" 
+        font-weight="800" 
+        font-size="120" 
+        fill="#ffffff" 
+        text-anchor="middle" 
+        letter-spacing="-2">
+    LM
+  </text>
+</svg>
