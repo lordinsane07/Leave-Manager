@@ -27,7 +27,7 @@ export const SocketProvider = ({ children }) => {
             return;
         }
 
-        const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const backendUrl = import.meta.env.VITE_API_URL || 'https://leave-manager-74g2.onrender.com';
         const socketUrl = backendUrl.replace('/api', ''); // Socket connects to root, not /api
 
         const newSocket = io(socketUrl, {

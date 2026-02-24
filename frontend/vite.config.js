@@ -7,8 +7,9 @@ export default defineConfig({
         port: 5173,
         proxy: {
             '/api': {
-                target: 'http://localhost:5000',
+                target: 'https://leave-manager-74g2.onrender.com', // Updated to live Render backend
                 changeOrigin: true,
+                secure: false, // Set to true if HTTPS is fully verified, sometimes Render takes a moment
             },
         },
     },

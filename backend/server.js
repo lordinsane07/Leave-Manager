@@ -41,9 +41,13 @@ initSocket(server);
 // Security headers (XSS, clickjacking, MIME sniffing protection)
 app.use(helmet());
 
-// CORS — restrict to frontend origin only
+// CORS configuration
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: [
+        process.env.FRONTEND_URL,
+        'http://localhost:5173',
+        'https://leave-manager-74g2.onrender.com'
+    ].filter(Boolean),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
