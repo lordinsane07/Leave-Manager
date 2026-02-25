@@ -231,9 +231,12 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
 
     // Managers may only process leaves from their own department
     if (req.user.role === 'manager') {
-        const employeeDept = leave.employee.department?.toString();
-        const managerDept = req.user.department?.toString();
-        if (employeeDept !== managerDept) {
+        const empDept = leave.employee.department;
+        const mgrDept = req.user.department;
+        // Handle both populated (object with _id) and unpopulated (ObjectId) formats
+        const employeeDeptId = (empDept?._id || empDept)?.toString();
+        const managerDeptId = (mgrDept?._id || mgrDept)?.toString();
+        if (employeeDeptId !== managerDeptId) {
             throw ApiError.forbidden('You can only manage leaves in your department');
         }
     }
