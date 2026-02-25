@@ -47,6 +47,7 @@ export default function LeaveHistory() {
     const [selectedIds, setSelectedIds] = useState([]);
     const [cancelConfirm, setCancelConfirm] = useState(null);
     const [bulkProcessing, setBulkProcessing] = useState(false);
+    const [actionProcessing, setActionProcessing] = useState(null);
 
     const isManager = user?.role === 'manager' || user?.role === 'admin';
 
@@ -57,8 +58,8 @@ export default function LeaveHistory() {
         return () => window.removeEventListener('app:leaveStatusChanged', fetchLeaves);
     }, [page, filters]);
 
-    const fetchLeaves = async () => {
-        setLoading(true);
+    const fetchLeaves = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const params = {
                 page,
@@ -72,9 +73,9 @@ export default function LeaveHistory() {
             setPagination(data.pagination || {});
             setSelectedIds([]);
         } catch {
-            showError('Failed to load leaves');
+            if (!silent) showError('Failed to load leaves');
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
@@ -120,27 +121,39 @@ export default function LeaveHistory() {
     );
 
     const handleAction = async (leaveId, status) => {
+        if (actionProcessing) return;
+        setActionProcessing({ id: leaveId, status });
         try {
             const payload = { status };
             if (status === 'rejected' && rejectComment) {
                 payload.managerComment = rejectComment;
             }
             await leaveService.updateStatus(leaveId, payload);
+            // Optimistically update local state so UI reflects the change instantly
+            setLeaves(prev => prev.map(l =>
+                l._id === leaveId ? { ...l, status } : l
+            ));
             success(`Leave ${status} successfully`);
             setSelectedLeave(null);
             setRejectComment('');
-            fetchLeaves();
+            // Delay re-fetch so backend has time to commit the write
+            setTimeout(() => fetchLeaves(true), 2000);
         } catch (err) {
             showError(err.response?.data?.message || 'Action failed');
+        } finally {
+            setActionProcessing(null);
         }
     };
 
     const handleCancel = async (leaveId) => {
         try {
             await leaveService.cancel(leaveId);
+            setLeaves(prev => prev.map(l =>
+                l._id === leaveId ? { ...l, status: 'cancelled' } : l
+            ));
             success('Leave cancelled');
             setCancelConfirm(null);
-            fetchLeaves();
+            setTimeout(() => fetchLeaves(true), 2000);
         } catch (err) {
             showError(err.response?.data?.message || 'Cancel failed');
         }
@@ -171,7 +184,7 @@ export default function LeaveHistory() {
         }
         setBulkProcessing(false);
         success(`${successCount} leave(s) ${status} successfully`);
-        fetchLeaves();
+        setTimeout(() => fetchLeaves(true), 2000);
     };
 
     return (
@@ -298,8 +311,13 @@ export default function LeaveHistory() {
                                                 <div className="flex items-center gap-1.5">
                                                     {isManager && leave.status === 'pending' && (
                                                         <>
-                                                            <Button size="sm" variant="success" onClick={() => handleAction(leave._id, 'approved')}>✓</Button>
-                                                            <Button size="sm" variant="danger" onClick={() => setSelectedLeave(leave)}>✗</Button>
+                                                            <Button size="sm" variant="success"
+                                                                isLoading={actionProcessing?.id === leave._id && actionProcessing?.status === 'approved'}
+                                                                disabled={!!actionProcessing}
+                                                                onClick={() => handleAction(leave._id, 'approved')}>✓</Button>
+                                                            <Button size="sm" variant="danger"
+                                                                disabled={!!actionProcessing}
+                                                                onClick={() => setSelectedLeave(leave)}>✗</Button>
                                                         </>
                                                     )}
                                                     {!isManager && leave.status === 'pending' && (
@@ -370,10 +388,16 @@ export default function LeaveHistory() {
                                     onChange={(e) => setRejectComment(e.target.value)}
                                 />
                                 <div className="flex justify-end gap-2">
-                                    <Button size="sm" variant="success" onClick={() => handleAction(selectedLeave._id, 'approved')}>
+                                    <Button size="sm" variant="success"
+                                        isLoading={actionProcessing?.id === selectedLeave._id && actionProcessing?.status === 'approved'}
+                                        disabled={!!actionProcessing}
+                                        onClick={() => handleAction(selectedLeave._id, 'approved')}>
                                         Approve
                                     </Button>
-                                    <Button size="sm" variant="danger" onClick={() => handleAction(selectedLeave._id, 'rejected')}>
+                                    <Button size="sm" variant="danger"
+                                        isLoading={actionProcessing?.id === selectedLeave._id && actionProcessing?.status === 'rejected'}
+                                        disabled={!!actionProcessing}
+                                        onClick={() => handleAction(selectedLeave._id, 'rejected')}>
                                         Reject
                                     </Button>
                                 </div>
