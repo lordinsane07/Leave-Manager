@@ -39,7 +39,10 @@ initSocket(server);
 // ━━━ Core Middleware ━━━
 
 // Security headers (XSS, clickjacking, MIME sniffing protection)
-app.use(helmet());
+// COOP set to 'same-origin-allow-popups' to allow Google OAuth popup postMessage
+app.use(helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+}));
 
 // CORS configuration
 app.use(cors({
