@@ -67,27 +67,44 @@ const register = asyncHandler(async (req, res, next) => {
 
     const { name, email, password, role, department } = req.body;
 
-    // Prevent duplicate email registration
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-        throw ApiError.conflict('Email already registered');
-    }
-
     // Generate OTP
     const { otp, otpExpiry } = generateOTP();
 
-    // Create user (unverified)
-    const user = await User.create({
-        name,
-        email,
-        password,
-        role: role || 'employee',
-        department,
-        authProvider: 'local',
-        isEmailVerified: false,
-        otp,
-        otpExpiry,
-    });
+    // Check for existing user
+    const existingUser = await User.findOne({ email });
+
+    let user;
+
+    if (existingUser) {
+        if (existingUser.isEmailVerified) {
+            // Verified account — cannot re-register
+            throw ApiError.conflict('Email already registered');
+        }
+
+        // Unverified account — update with new info and fresh OTP
+        existingUser.name = name;
+        existingUser.password = password;
+        existingUser.role = role || 'employee';
+        existingUser.department = department;
+        existingUser.otp = otp;
+        existingUser.otpExpiry = otpExpiry;
+        await existingUser.save();
+        user = existingUser;
+        logger.info(`Unverified account updated with new OTP: ${email}`);
+    } else {
+        // Create new user (unverified)
+        user = await User.create({
+            name,
+            email,
+            password,
+            role: role || 'employee',
+            department,
+            authProvider: 'local',
+            isEmailVerified: false,
+            otp,
+            otpExpiry,
+        });
+    }
 
     // Send OTP email
     await sendOTPEmail(email, name, otp);

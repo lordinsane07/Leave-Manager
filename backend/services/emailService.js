@@ -1,41 +1,51 @@
-const { Resend } = require('resend');
 const logger = require('../utils/logger');
 
-// Initialize Resend with API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Brevo API endpoint (HTTP — works on Render, no SMTP needed)
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 // Startup diagnostic
-console.log('📧 [EMAIL SERVICE] Provider: Resend (HTTP API)');
-console.log('📧 [EMAIL SERVICE] RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✅ SET' : '❌ NOT SET');
+console.log('📧 [EMAIL SERVICE] Provider: Brevo (HTTP API)');
+console.log('📧 [EMAIL SERVICE] BREVO_API_KEY:', process.env.BREVO_API_KEY ? '✅ SET' : '❌ NOT SET');
 
-// Sends an email via Resend HTTP API (works on Render — no SMTP needed)
+// Sends an email via Brevo HTTP API
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
-    if (!process.env.RESEND_API_KEY) {
-      console.log('📧 [EMAIL] SKIPPED — RESEND_API_KEY not set');
-      logger.warn('Email not sent — RESEND_API_KEY not configured');
-      return { sent: false, reason: 'Resend API key not configured' };
+    if (!process.env.BREVO_API_KEY) {
+      console.log('📧 [EMAIL] SKIPPED — BREVO_API_KEY not set');
+      logger.warn('Email not sent — BREVO_API_KEY not configured');
+      return { sent: false, reason: 'Brevo API key not configured' };
     }
 
     console.log(`📧 [EMAIL] Sending to: ${to} | Subject: ${subject}`);
 
-    const { data, error } = await resend.emails.send({
-      from: 'Leave Manager <onboarding@resend.dev>',
-      to: [to],
-      subject,
-      html: html || undefined,
-      text: text || undefined,
+    const response = await fetch(BREVO_API_URL, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: 'Leave Manager', email: process.env.BREVO_SENDER || 'debmrittick@gmail.com' },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html || undefined,
+        textContent: text || undefined,
+      }),
     });
 
-    if (error) {
-      console.log(`📧 [EMAIL] ❌ FAILED to ${to} — Error: ${error.message}`);
-      logger.error(`Email send failed: ${error.message}`);
-      return { sent: false, reason: error.message };
+    const data = await response.json();
+
+    if (!response.ok) {
+      const errMsg = data.message || JSON.stringify(data);
+      console.log(`📧 [EMAIL] ❌ FAILED to ${to} — Error: ${errMsg}`);
+      logger.error(`Email send failed: ${errMsg}`);
+      return { sent: false, reason: errMsg };
     }
 
-    console.log(`📧 [EMAIL] ✅ SENT to ${to} — id: ${data.id}`);
-    logger.info(`Email sent to ${to}: ${data.id}`);
-    return { sent: true, messageId: data.id };
+    console.log(`📧 [EMAIL] ✅ SENT to ${to} — messageId: ${data.messageId}`);
+    logger.info(`Email sent to ${to}: ${data.messageId}`);
+    return { sent: true, messageId: data.messageId };
   } catch (error) {
     console.log(`📧 [EMAIL] ❌ FAILED to ${to} — Error: ${error.message}`);
     logger.error(`Email send failed: ${error.message}`);
