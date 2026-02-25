@@ -25,9 +25,13 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+        const url = originalRequest?.url || '';
 
-        // If 401 and not already retried, attempt token refresh
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Skip token refresh for auth endpoints — they naturally return 401
+        const isAuthRoute = url.includes('/auth/');
+
+        // If 401 and not already retried and not an auth route, attempt token refresh
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
             originalRequest._retry = true;
 
             try {
@@ -43,6 +47,11 @@ api.interceptors.response.use(
                     originalRequest.headers.Authorization = `Bearer ${newToken}`;
                     return api(originalRequest);
                 }
+
+                // No token received — redirect to login
+                localStorage.removeItem('accessToken');
+                window.location.href = '/login';
+                return Promise.reject(new Error('Token refresh failed'));
             } catch (refreshError) {
                 // Refresh failed — clear tokens and redirect to login
                 localStorage.removeItem('accessToken');
