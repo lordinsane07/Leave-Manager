@@ -8,7 +8,7 @@ import Button from '../components/ui/Button';
 import Select from '../components/ui/Select';
 import Input from '../components/ui/Input';
 import Modal from '../components/ui/Modal';
-import { PageLoader } from '../components/ui/Loader';
+import { Skeleton } from '../components/ui/Loader';
 import EmptyState from '../components/ui/EmptyState';
 
 export default function DepartmentManagement() {
@@ -150,7 +150,19 @@ export default function DepartmentManagement() {
                 </div>
 
                 {loading ? (
-                    <PageLoader />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className="bg-surface rounded-2xl p-5 border border-border/50 space-y-3">
+                                <Skeleton className="h-5 w-32" />
+                                <Skeleton className="h-4 w-16 rounded-full" />
+                                <Skeleton className="h-4 w-40" />
+                                <Skeleton className="h-4 w-24" />
+                                <div className="border-t border-border/50 pt-3 flex gap-2">
+                                    {[...Array(4)].map((_, j) => <Skeleton key={j} className="h-6 w-16 rounded-md" />)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 ) : departments.length === 0 ? (
                     <EmptyState title="No departments" description="Create your first department to get started." action={<Button size="sm" onClick={openCreate}>Create Department</Button>} />
                 ) : (

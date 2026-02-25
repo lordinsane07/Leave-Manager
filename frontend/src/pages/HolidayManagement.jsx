@@ -8,7 +8,7 @@ import Button from '../components/ui/Button';
 import Select from '../components/ui/Select';
 import Input from '../components/ui/Input';
 import Modal from '../components/ui/Modal';
-import { PageLoader, Skeleton } from '../components/ui/Loader';
+import { Skeleton } from '../components/ui/Loader';
 import EmptyState from '../components/ui/EmptyState';
 import { formatDate } from '../utils/dateUtils';
 

@@ -126,7 +126,7 @@ const verifyOTP = asyncHandler(async (req, res, next) => {
         throw ApiError.badRequest('Email and OTP are required');
     }
 
-    const user = await User.findOne({ email }).select('+otp +otpExpiry');
+    const user = await User.findOne({ email }).select('+otp +otpExpiry').populate('department', 'name code');
     if (!user) {
         throw ApiError.notFound('User not found');
     }
@@ -233,7 +233,7 @@ const googleAuth = asyncHandler(async (req, res, next) => {
     }
 
     // Check if user exists
-    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+    let user = await User.findOne({ $or: [{ googleId }, { email }] }).populate('department', 'name code');
 
     if (user) {
         // Existing user — update Google info if needed
@@ -295,7 +295,7 @@ const login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
 
     // Fetch user including password field for comparison
-    const user = await User.findOne({ email }).select('+password +refreshToken');
+    const user = await User.findOne({ email }).select('+password +refreshToken').populate('department', 'name code');
     if (!user) {
         throw ApiError.unauthorized('Invalid email or password');
     }

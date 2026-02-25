@@ -4,7 +4,7 @@ import { aiService, leaveService } from '../services';
 import TopBar from '../components/layout/TopBar';
 import Card, { CardHeader, CardTitle } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
-import { PageLoader, Skeleton } from '../components/ui/Loader';
+import { Skeleton } from '../components/ui/Loader';
 import { cn } from '../utils/cn';
 
 export default function AIInsights() {

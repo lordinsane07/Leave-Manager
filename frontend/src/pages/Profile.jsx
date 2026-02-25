@@ -7,7 +7,7 @@ import Card, { CardHeader, CardTitle } from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import { PageLoader } from '../components/ui/Loader';
+import { Skeleton } from '../components/ui/Loader';
 import { getInitials, capitalize } from '../utils/helpers';
 import { formatDate } from '../utils/dateUtils';
 
@@ -76,7 +76,29 @@ export default function Profile() {
     // Cloudinary returns full HTTPS URLs — no local prefix needed
     const avatarUrl = user?.avatar || null;
 
-    if (!user) return <PageLoader />;
+    if (!user) return (
+        <>
+            <TopBar title="Profile" />
+            <div className="p-4 md:p-6 max-w-3xl mx-auto">
+                <div className="bg-surface rounded-2xl p-5 mb-6 border border-border/50">
+                    <div className="flex items-start gap-5">
+                        <Skeleton className="w-20 h-20 rounded-2xl" />
+                        <div className="flex-1 space-y-2">
+                            <Skeleton className="h-6 w-40" />
+                            <Skeleton className="h-4 w-56" />
+                            <Skeleton className="h-3 w-32" />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-surface rounded-2xl p-5 border border-border/50">
+                    <Skeleton className="h-5 w-28 mb-4" />
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 
     const balance = user.leaveBalance || {};
 
