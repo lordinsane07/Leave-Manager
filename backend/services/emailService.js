@@ -12,10 +12,10 @@ console.log('📧 [EMAIL SERVICE] EMAIL_FROM:', process.env.EMAIL_FROM || '(will
 const createTransporter = () => {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT, 10) || 587,
-    secure: false,
-    connectionTimeout: 10000, // 10s to establish connection
-    socketTimeout: 15000,     // 15s for socket inactivity
+    port: parseInt(process.env.SMTP_PORT, 10) || 465,
+    secure: true, // Use SSL on port 465 (Render blocks port 587)
+    connectionTimeout: 15000, // 15s to establish connection
+    socketTimeout: 20000,     // 20s for socket inactivity
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
