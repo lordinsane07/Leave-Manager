@@ -33,6 +33,7 @@ export default function MyLeaves() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
     const [cancelConfirm, setCancelConfirm] = useState(null);
+    const [selectedLeave, setSelectedLeave] = useState(null);
     const [sortBy, setSortBy] = useState('appliedAt');
     const [sortOrder, setSortOrder] = useState('desc');
 
@@ -233,12 +234,18 @@ export default function MyLeaves() {
                                             </td>
                                             <td className="px-4 py-3 text-xs text-txt-muted">{timeAgo(leave.appliedAt)}</td>
                                             <td className="px-4 py-3">
-                                                {leave.status === 'pending' && (
-                                                    <Button size="sm" variant="ghost" onClick={() => setCancelConfirm(leave)}>Cancel</Button>
-                                                )}
-                                                {leave.managerComment && (
-                                                    <span className="text-[10px] text-txt-muted ml-1" title={leave.managerComment}>💬</span>
-                                                )}
+                                                <div className="flex items-center gap-1.5">
+                                                    {leave.status === 'pending' && (
+                                                        <Button size="sm" variant="ghost" onClick={() => setCancelConfirm(leave)}>Cancel</Button>
+                                                    )}
+                                                    <button
+                                                        className="text-xs text-accent hover:underline"
+                                                        onClick={() => setCancelConfirm(null) || setSelectedLeave(leave)}
+                                                        title={leave.reason}
+                                                    >
+                                                        View
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -261,6 +268,29 @@ export default function MyLeaves() {
                         <div className="flex justify-end gap-2">
                             <Button size="sm" variant="ghost" onClick={() => setCancelConfirm(null)}>Keep it</Button>
                             <Button size="sm" variant="danger" onClick={() => handleCancel(cancelConfirm._id)}>Yes, Cancel</Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Leave Detail Modal */}
+            <Modal isOpen={!!selectedLeave} onClose={() => setSelectedLeave(null)} title="Leave Details">
+                {selectedLeave && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div><span className="text-txt-muted">Type:</span> <span className="text-txt-primary font-medium">{getLeaveTypeLabel(selectedLeave.leaveType)}</span></div>
+                            <div><span className="text-txt-muted">Duration:</span> <span className="text-txt-primary">{selectedLeave.totalDays} day(s)</span></div>
+                            <div><span className="text-txt-muted">Status:</span> <Badge variant={
+                                selectedLeave.status === 'approved' ? 'success' :
+                                    selectedLeave.status === 'rejected' ? 'danger' :
+                                        selectedLeave.status === 'cancelled' ? 'neutral' : 'warning'
+                            }>{capitalize(selectedLeave.status)}</Badge></div>
+                            <div><span className="text-txt-muted">Applied:</span> <span className="text-txt-primary">{timeAgo(selectedLeave.appliedAt)}</span></div>
+                            <div className="col-span-2"><span className="text-txt-muted">Dates:</span> <span className="text-txt-primary">{formatDate(selectedLeave.startDate)} — {formatDate(selectedLeave.endDate)}</span></div>
+                            <div className="col-span-2"><span className="text-txt-muted">Reason:</span> <span className="text-txt-primary">{selectedLeave.reason}</span></div>
+                            {selectedLeave.managerComment && (
+                                <div className="col-span-2"><span className="text-txt-muted">Manager Comment:</span> <span className="text-txt-primary">{selectedLeave.managerComment}</span></div>
+                            )}
                         </div>
                     </div>
                 )}
