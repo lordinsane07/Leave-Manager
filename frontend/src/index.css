@@ -33,6 +33,7 @@
 
 .dark {
   /* ━━━ Dark Theme: Ember Dark ━━━ */
+  color-scheme: dark;
   --bg-base: #141210;
   --bg-surface: #1E1B18;
   --bg-elevated: #272320;
@@ -271,16 +272,7 @@ body {
   transform: scale(0.97);
 }
 
-/* ━━━ Date Input Calendar Icon — Dark Mode Fix ━━━ */
-.dark input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(2);
-  opacity: 1;
-  cursor: pointer;
-}
 
-.dark input[type="date"] {
-  color-scheme: dark;
-}
 
 /* ━━━ Circular Burnout Gauge ━━━ */
 .burnout-gauge {

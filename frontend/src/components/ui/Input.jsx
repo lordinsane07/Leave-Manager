@@ -7,8 +7,6 @@ export default function Input({
     type = 'text',
     ...props
 }) {
-    const isDark = document.documentElement.classList.contains('dark');
-
     return (
         <div className="relative w-full">
             {label && (
@@ -25,7 +23,6 @@ export default function Input({
                     error ? 'border-accent-danger' : 'border-border',
                     className
                 )}
-                style={type === 'date' && isDark ? { colorScheme: 'dark' } : undefined}
                 {...props}
             />
             {error && (
