@@ -271,6 +271,15 @@ body {
   transform: scale(0.97);
 }
 
+/* ━━━ Date Input Calendar Icon — Dark Mode Fix ━━━ */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+
 /* ━━━ Circular Burnout Gauge ━━━ */
 .burnout-gauge {
   transform: rotate(-90deg);
