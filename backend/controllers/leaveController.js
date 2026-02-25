@@ -73,50 +73,55 @@ const applyLeave = asyncHandler(async (req, res) => {
         isUrgent: isUrgent || false,
     });
 
-    // Notify the employee's manager via Socket.io and Email
-    if (user.managerId) {
-        const manager = await User.findById(user.managerId).select('email name');
+    // Send response immediately — don't block on email/socket/audit
+    ApiResponse.created(res, 'Leave application submitted successfully', { leave });
 
-        if (manager) {
-            // Send Email
-            try {
-                await sendLeaveApplicationEmail(
-                    manager.email,
-                    user.name,
-                    leaveType,
-                    totalDays,
-                    new Date(startDate).toLocaleDateString()
-                );
-            } catch (emailErr) {
-                logger.error(`Failed to send leave application email to manager: ${emailErr.message}`);
-            }
-        }
-        const notification = await Notification.create({
-            recipient: user.managerId,
-            type: 'leave_submitted',
-            message: `${user.name} has applied for ${totalDays} day(s) of ${leaveType} leave`,
-            data: { leaveId: leave._id, employeeName: user.name, leaveType, totalDays },
-        });
-
+    // Run background tasks (email, socket, audit) without blocking the response
+    setImmediate(async () => {
         try {
-            const io = getIO();
-            io.to(`user-${user.managerId}`).emit('leave:submitted', notification);
-        } catch (socketErr) {
-            logger.warn(`Socket notification failed: ${socketErr.message}`);
+            if (user.managerId) {
+                const manager = await User.findById(user.managerId).select('email name');
+
+                if (manager) {
+                    try {
+                        await sendLeaveApplicationEmail(
+                            manager.email,
+                            user.name,
+                            leaveType,
+                            totalDays,
+                            new Date(startDate).toLocaleDateString()
+                        );
+                    } catch (emailErr) {
+                        logger.error(`Failed to send leave application email to manager: ${emailErr.message}`);
+                    }
+                }
+                const notification = await Notification.create({
+                    recipient: user.managerId,
+                    type: 'leave_submitted',
+                    message: `${user.name} has applied for ${totalDays} day(s) of ${leaveType} leave`,
+                    data: { leaveId: leave._id, employeeName: user.name, leaveType, totalDays },
+                });
+
+                try {
+                    const io = getIO();
+                    io.to(`user-${user.managerId}`).emit('leave:submitted', notification);
+                } catch (socketErr) {
+                    logger.warn(`Socket notification failed: ${socketErr.message}`);
+                }
+            }
+
+            await createAuditEntry({
+                actor: employeeId,
+                action: 'CREATE',
+                targetModel: 'Leave',
+                targetId: leave._id,
+                changes: { before: null, after: { leaveType, startDate, endDate, totalDays, status: 'pending' } },
+                req,
+            });
+        } catch (bgErr) {
+            logger.error(`Background task error (applyLeave): ${bgErr.message}`);
         }
-    }
-
-    // Audit log
-    await createAuditEntry({
-        actor: employeeId,
-        action: 'CREATE',
-        targetModel: 'Leave',
-        targetId: leave._id,
-        changes: { before: null, after: { leaveType, startDate, endDate, totalDays, status: 'pending' } },
-        req,
     });
-
-    return ApiResponse.created(res, 'Leave application submitted successfully', { leave });
 });
 
 // ━━━ GET /api/leaves — List leaves with pagination, filtering, sorting ━━━
@@ -252,54 +257,58 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
 
     await leave.save();
 
-    // Create notification for the employee
-    const notificationType = status === 'approved' ? 'leave_approved' : 'leave_rejected';
-    const notificationMessage = status === 'approved'
-        ? `Your ${leave.leaveType} leave has been approved by ${req.user.name}`
-        : `Your ${leave.leaveType} leave has been rejected by ${req.user.name}. ${managerComment ? `Reason: ${managerComment}` : ''}`;
+    // Send response immediately — don't block on email/socket/audit
+    ApiResponse.ok(res, `Leave ${status} successfully`, { leave });
 
-    const notification = await Notification.create({
-        recipient: leave.employee._id,
-        type: notificationType,
-        message: notificationMessage,
-        data: { leaveId: leave._id, status, managerComment },
-    });
+    // Run background tasks (email, socket, audit) without blocking the response
+    setImmediate(async () => {
+        try {
+            const notificationType = status === 'approved' ? 'leave_approved' : 'leave_rejected';
+            const notificationMessage = status === 'approved'
+                ? `Your ${leave.leaveType} leave has been approved by ${req.user.name}`
+                : `Your ${leave.leaveType} leave has been rejected by ${req.user.name}. ${managerComment ? `Reason: ${managerComment}` : ''}`;
 
-    // Emit real-time notification
-    try {
-        const io = getIO();
-        const eventName = status === 'approved' ? 'leave:approved' : 'leave:rejected';
-        io.to(`user-${leave.employee._id}`).emit(eventName, notification);
-    } catch (socketErr) {
-        logger.warn(`Socket notification failed: ${socketErr.message}`);
-    }
+            const notification = await Notification.create({
+                recipient: leave.employee._id,
+                type: notificationType,
+                message: notificationMessage,
+                data: { leaveId: leave._id, status, managerComment },
+            });
 
-    // Send Email notification
-    try {
-        if (leave.employee.email) {
-            await sendLeaveStatusEmail(
-                leave.employee.email,
-                leave.employee.name,
-                leave.leaveType,
-                status,
-                managerComment || ''
-            );
+            try {
+                const io = getIO();
+                const eventName = status === 'approved' ? 'leave:approved' : 'leave:rejected';
+                io.to(`user-${leave.employee._id}`).emit(eventName, notification);
+            } catch (socketErr) {
+                logger.warn(`Socket notification failed: ${socketErr.message}`);
+            }
+
+            try {
+                if (leave.employee.email) {
+                    await sendLeaveStatusEmail(
+                        leave.employee.email,
+                        leave.employee.name,
+                        leave.leaveType,
+                        status,
+                        managerComment || ''
+                    );
+                }
+            } catch (emailErr) {
+                logger.error(`Failed to send leave status email to employee: ${emailErr.message}`);
+            }
+
+            await createAuditEntry({
+                actor: req.user._id,
+                action: status === 'approved' ? 'APPROVE' : 'REJECT',
+                targetModel: 'Leave',
+                targetId: leave._id,
+                changes: { before: { status: previousStatus }, after: { status, managerComment } },
+                req,
+            });
+        } catch (bgErr) {
+            logger.error(`Background task error (updateLeaveStatus): ${bgErr.message}`);
         }
-    } catch (emailErr) {
-        logger.error(`Failed to send leave status email to employee: ${emailErr.message}`);
-    }
-
-    // Audit log
-    await createAuditEntry({
-        actor: req.user._id,
-        action: status === 'approved' ? 'APPROVE' : 'REJECT',
-        targetModel: 'Leave',
-        targetId: leave._id,
-        changes: { before: { status: previousStatus }, after: { status, managerComment } },
-        req,
     });
-
-    return ApiResponse.ok(res, `Leave ${status} successfully`, { leave });
 });
 
 // ━━━ PATCH /api/leaves/:id/cancel — Cancel own pending leave ━━━
