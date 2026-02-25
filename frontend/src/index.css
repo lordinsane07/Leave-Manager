@@ -273,7 +273,7 @@ body {
 
 /* ━━━ Date Input Calendar Icon — Dark Mode Fix ━━━ */
 .dark input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.8);
+  filter: invert(1);
 }
 
 .dark input[type="date"] {
