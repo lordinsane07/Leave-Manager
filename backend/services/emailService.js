@@ -1,6 +1,13 @@
 const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
 
+// Startup diagnostic — log SMTP config status immediately
+console.log('📧 [EMAIL SERVICE] SMTP_HOST:', process.env.SMTP_HOST || '(not set, defaulting to smtp.gmail.com)');
+console.log('📧 [EMAIL SERVICE] SMTP_PORT:', process.env.SMTP_PORT || '(not set, defaulting to 587)');
+console.log('📧 [EMAIL SERVICE] SMTP_USER:', process.env.SMTP_USER ? `${process.env.SMTP_USER.substring(0, 4)}****` : '❌ NOT SET');
+console.log('📧 [EMAIL SERVICE] SMTP_PASS:', process.env.SMTP_PASS ? '✅ SET' : '❌ NOT SET');
+console.log('📧 [EMAIL SERVICE] EMAIL_FROM:', process.env.EMAIL_FROM || '(will use SMTP_USER)');
+
 // Creates reusable SMTP transporter from environment config
 const createTransporter = () => {
   return nodemailer.createTransport({
@@ -21,14 +28,18 @@ const sendEmail = async ({ to, subject, html, text }) => {
   try {
     // Skip sending if SMTP credentials are not configured
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.log('📧 [EMAIL] SKIPPED — SMTP_USER or SMTP_PASS not set in environment');
       logger.warn('Email not sent — SMTP credentials not configured');
       return { sent: false, reason: 'SMTP not configured' };
     }
 
+    console.log(`📧 [EMAIL] Sending to: ${to} | Subject: ${subject}`);
     const transporter = createTransporter();
 
+    // Gmail forces the authenticated sender's address as "from"
+    // Using SMTP_USER as from address to avoid Gmail rejection
     const mailOptions = {
-      from: `"Leave Manager" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+      from: `"Leave Manager" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html: html || undefined,
@@ -36,11 +47,13 @@ const sendEmail = async ({ to, subject, html, text }) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
+    console.log(`📧 [EMAIL] ✅ SENT to ${to} — messageId: ${info.messageId}`);
     logger.info(`Email sent to ${to}: ${info.messageId}`);
 
     return { sent: true, messageId: info.messageId };
   } catch (error) {
     // Email failures should not break the main flow
+    console.log(`📧 [EMAIL] ❌ FAILED to ${to} — Error: ${error.message}`);
     logger.error(`Email send failed: ${error.message}`);
     return { sent: false, reason: error.message };
   }
