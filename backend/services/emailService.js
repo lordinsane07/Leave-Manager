@@ -1,58 +1,42 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const logger = require('../utils/logger');
 
-// Startup diagnostic — log SMTP config status immediately
-console.log('📧 [EMAIL SERVICE] SMTP_HOST:', process.env.SMTP_HOST || '(not set, defaulting to smtp.gmail.com)');
-console.log('📧 [EMAIL SERVICE] SMTP_PORT:', process.env.SMTP_PORT || '(not set, defaulting to 587)');
-console.log('📧 [EMAIL SERVICE] SMTP_USER:', process.env.SMTP_USER ? `${process.env.SMTP_USER.substring(0, 4)}****` : '❌ NOT SET');
-console.log('📧 [EMAIL SERVICE] SMTP_PASS:', process.env.SMTP_PASS ? '✅ SET' : '❌ NOT SET');
-console.log('📧 [EMAIL SERVICE] EMAIL_FROM:', process.env.EMAIL_FROM || '(will use SMTP_USER)');
+// Initialize Resend with API key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Creates reusable SMTP transporter from environment config
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT, 10) || 465,
-    secure: true, // Use SSL on port 465 (Render blocks port 587)
-    connectionTimeout: 15000, // 15s to establish connection
-    socketTimeout: 20000,     // 20s for socket inactivity
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-};
+// Startup diagnostic
+console.log('📧 [EMAIL SERVICE] Provider: Resend (HTTP API)');
+console.log('📧 [EMAIL SERVICE] RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✅ SET' : '❌ NOT SET');
 
-// Sends an email notification (non-blocking — failures are logged but don't throw)
+// Sends an email via Resend HTTP API (works on Render — no SMTP needed)
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
-    // Skip sending if SMTP credentials are not configured
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log('📧 [EMAIL] SKIPPED — SMTP_USER or SMTP_PASS not set in environment');
-      logger.warn('Email not sent — SMTP credentials not configured');
-      return { sent: false, reason: 'SMTP not configured' };
+    if (!process.env.RESEND_API_KEY) {
+      console.log('📧 [EMAIL] SKIPPED — RESEND_API_KEY not set');
+      logger.warn('Email not sent — RESEND_API_KEY not configured');
+      return { sent: false, reason: 'Resend API key not configured' };
     }
 
     console.log(`📧 [EMAIL] Sending to: ${to} | Subject: ${subject}`);
-    const transporter = createTransporter();
 
-    // Gmail forces the authenticated sender's address as "from"
-    // Using SMTP_USER as from address to avoid Gmail rejection
-    const mailOptions = {
-      from: `"Leave Manager" <${process.env.SMTP_USER}>`,
-      to,
+    const { data, error } = await resend.emails.send({
+      from: 'Leave Manager <onboarding@resend.dev>',
+      to: [to],
       subject,
       html: html || undefined,
       text: text || undefined,
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`📧 [EMAIL] ✅ SENT to ${to} — messageId: ${info.messageId}`);
-    logger.info(`Email sent to ${to}: ${info.messageId}`);
+    if (error) {
+      console.log(`📧 [EMAIL] ❌ FAILED to ${to} — Error: ${error.message}`);
+      logger.error(`Email send failed: ${error.message}`);
+      return { sent: false, reason: error.message };
+    }
 
-    return { sent: true, messageId: info.messageId };
+    console.log(`📧 [EMAIL] ✅ SENT to ${to} — id: ${data.id}`);
+    logger.info(`Email sent to ${to}: ${data.id}`);
+    return { sent: true, messageId: data.id };
   } catch (error) {
-    // Email failures should not break the main flow
     console.log(`📧 [EMAIL] ❌ FAILED to ${to} — Error: ${error.message}`);
     logger.error(`Email send failed: ${error.message}`);
     return { sent: false, reason: error.message };
