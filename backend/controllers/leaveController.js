@@ -1,4 +1,5 @@
 const { validationResult } = require('express-validator');
+const { startOfDay, parseISO } = require('date-fns');
 const Leave = require('../models/Leave');
 const User = require('../models/User');
 const Holiday = require('../models/Holiday');
@@ -21,6 +22,29 @@ const applyLeave = asyncHandler(async (req, res) => {
 
     const { leaveType, startDate, endDate, reason, isUrgent } = req.body;
     const employeeId = req.user._id;
+
+    // ━━━ Date validation using server time ━━━
+    const start = startOfDay(typeof startDate === 'string' ? parseISO(startDate) : new Date(startDate));
+    const end = startOfDay(typeof endDate === 'string' ? parseISO(endDate) : new Date(endDate));
+    const today = startOfDay(new Date());
+    const currentYear = today.getFullYear();
+
+    // Rule 1: Start date must be on or before end date
+    if (start > end) {
+        throw ApiError.badRequest('Start date must be on or before end date');
+    }
+
+    // Rule 2: Leave cannot be applied for past dates
+    if (start < today) {
+        throw ApiError.badRequest('Leave cannot be applied for past dates');
+    }
+
+    // Rule 3: Leave dates must be within the current calendar year
+    if (start.getFullYear() !== currentYear || end.getFullYear() !== currentYear) {
+        throw ApiError.badRequest(
+            `Leave dates must be within the current year (${currentYear}). Cross-year applications are not allowed.`
+        );
+    }
 
     // Fetch holidays to exclude from working day calculation
     const holidays = await Holiday.find({

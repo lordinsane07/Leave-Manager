@@ -52,8 +52,9 @@ const hasOverlap = (newStart, newEnd, existingLeaves) => {
     return existingLeaves.some((leave) => {
         const lStart = startOfDay(new Date(leave.startDate));
         const lEnd = startOfDay(new Date(leave.endDate));
-        // Overlap exists if one range starts before the other ends AND vice versa
-        return isBefore(start, lEnd) && isAfter(end, lStart) || start.getTime() === lStart.getTime();
+        // Overlap exists when both ranges share at least one common day
+        return (isBefore(start, lEnd) || start.getTime() === lEnd.getTime()) &&
+            (isAfter(end, lStart) || end.getTime() === lStart.getTime());
     });
 };
 
