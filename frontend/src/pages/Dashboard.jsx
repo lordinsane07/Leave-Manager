@@ -23,6 +23,11 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 // Register Chart.js modules
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
 
+// Chart.js renders to <canvas> and can't resolve CSS vars — read computed values
+function getThemeColor(varName) {
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#999';
+}
+
 export default function Dashboard() {
     const { user } = useAuth();
     const role = user?.role;
@@ -127,7 +132,7 @@ function EmployeeDashboard({ user }) {
                                 <Doughnut data={balanceChartData} options={{
                                     responsive: true, maintainAspectRatio: false,
                                     cutout: '65%',
-                                    plugins: { legend: { position: 'bottom', labels: { color: 'var(--txt-muted)', font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 } } },
+                                    plugins: { legend: { position: 'bottom', labels: { color: getThemeColor('--text-muted'), font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 } } },
                                 }} />
                             </div>
                         </div>
@@ -433,13 +438,13 @@ function AdminDashboard({ user }) {
             legend: {
                 position: 'top',
                 align: 'end',
-                labels: { color: 'var(--txt-muted)', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 16 },
+                labels: { color: getThemeColor('--text-muted'), font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8, padding: 16 },
             },
             tooltip: {
-                backgroundColor: 'var(--surface)',
-                titleColor: 'var(--txt-primary)',
-                bodyColor: 'var(--txt-secondary)',
-                borderColor: 'var(--border)',
+                backgroundColor: getThemeColor('--bg-surface'),
+                titleColor: getThemeColor('--text-primary'),
+                bodyColor: getThemeColor('--text-secondary'),
+                borderColor: getThemeColor('--border'),
                 borderWidth: 1,
                 cornerRadius: 8,
                 padding: 10,
@@ -448,11 +453,11 @@ function AdminDashboard({ user }) {
         scales: {
             x: {
                 grid: { display: false },
-                ticks: { color: 'var(--txt-muted)', font: { size: 10 } },
+                ticks: { color: getThemeColor('--text-muted'), font: { size: 10 } },
             },
             y: {
-                grid: { color: 'var(--border)', lineWidth: 0.5 },
-                ticks: { color: 'var(--txt-muted)', font: { size: 10 }, stepSize: 1 },
+                grid: { color: getThemeColor('--border'), lineWidth: 0.5 },
+                ticks: { color: getThemeColor('--text-muted'), font: { size: 10 }, stepSize: 1 },
                 beginAtZero: true,
             },
         },
@@ -476,7 +481,7 @@ function AdminDashboard({ user }) {
         plugins: {
             legend: {
                 position: 'bottom',
-                labels: { color: 'var(--txt-muted)', font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 },
+                labels: { color: getThemeColor('--text-muted'), font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 },
             },
         },
     };
