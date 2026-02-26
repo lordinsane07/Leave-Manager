@@ -133,6 +133,8 @@ const updateStatus = asyncHandler(async (req, res) => {
     claim.approverComment = approverComment || '';
     claim.processedAt = new Date();
     await claim.save();
+    await claim.populate('employee', 'name email avatar department');
+    await claim.populate('approvedBy', 'name');
 
     logger.info(`Reimbursement ${claim._id} ${resultStatus} by ${req.user.name} (${req.user.role})`);
 
