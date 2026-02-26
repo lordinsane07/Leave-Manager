@@ -137,6 +137,7 @@ export default function Reimbursements() {
             fetchClaims();
             fetchStats();
         } catch (err) {
+            setShowForm(false);
             showError(err.response?.data?.message || 'Failed to submit claim');
         } finally {
             setSubmitting(false);
