@@ -1,9 +1,16 @@
 const Reimbursement = require('../models/Reimbursement');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
 const { asyncHandler } = require('../middleware/authMiddleware');
+const { getIO } = require('../config/socket');
 const logger = require('../utils/logger');
+const {
+    sendReimbursementManagerApprovedEmail,
+    sendReimbursementApprovedEmail,
+    sendReimbursementRejectedEmail,
+} = require('../services/emailService');
 
 // ━━━ POST /api/reimbursements — Submit a new claim ━━━
 const submitClaim = asyncHandler(async (req, res) => {
@@ -138,7 +145,63 @@ const updateStatus = asyncHandler(async (req, res) => {
 
     logger.info(`Reimbursement ${claim._id} ${resultStatus} by ${req.user.name} (${req.user.role})`);
 
-    return ApiResponse.ok(res, responseMessage, { claim });
+    // Send response immediately
+    ApiResponse.ok(res, responseMessage, { claim });
+
+    // Fire-and-forget email notification (never crashes the request)
+    setImmediate(async () => {
+        try {
+            const empEmail = claim.employee?.email;
+            const empName = claim.employee?.name;
+            if (!empEmail) return;
+
+            if (resultStatus === 'manager_approved') {
+                await sendReimbursementManagerApprovedEmail(
+                    empEmail, empName, claim.category, claim.amount, req.user.name
+                );
+            } else if (resultStatus === 'approved') {
+                await sendReimbursementApprovedEmail(
+                    empEmail, empName, claim.category, claim.amount, req.user.name
+                );
+            } else if (resultStatus === 'rejected') {
+                await sendReimbursementRejectedEmail(
+                    empEmail, empName, claim.category, claim.amount, req.user.name, approverComment || ''
+                );
+            }
+        } catch (emailErr) {
+            logger.error(`Failed to send reimbursement email for ${claim._id}: ${emailErr.message}`);
+        }
+
+        // Create in-app notification + socket push
+        try {
+            const notifTypeMap = {
+                manager_approved: 'reimbursement_manager_approved',
+                approved: 'reimbursement_approved',
+                rejected: 'reimbursement_rejected',
+            };
+            const notifMessageMap = {
+                manager_approved: `Your ${claim.category} reimbursement (₹${claim.amount.toLocaleString()}) has been approved by Manager (${req.user.name}) and forwarded to Admin for final approval.`,
+                approved: `Your ${claim.category} reimbursement (₹${claim.amount.toLocaleString()}) has been approved by ${req.user.name}.`,
+                rejected: `Your ${claim.category} reimbursement (₹${claim.amount.toLocaleString()}) has been rejected by ${req.user.name}.${approverComment ? ` Reason: ${approverComment}` : ''}`,
+            };
+
+            const notification = await Notification.create({
+                recipient: claim.employee._id,
+                type: notifTypeMap[resultStatus],
+                message: notifMessageMap[resultStatus],
+                data: { claimId: claim._id, status: resultStatus, category: claim.category, amount: claim.amount },
+            });
+
+            try {
+                const io = getIO();
+                io.to(`user-${claim.employee._id}`).emit(`reimbursement:${resultStatus}`, notification);
+            } catch (socketErr) {
+                logger.warn(`Socket notification failed for reimbursement: ${socketErr.message}`);
+            }
+        } catch (notifErr) {
+            logger.error(`Failed to create reimbursement notification for ${claim._id}: ${notifErr.message}`);
+        }
+    });
 });
 
 // ━━━ PATCH /api/reimbursements/:id/cancel — Employee cancels own ━━━

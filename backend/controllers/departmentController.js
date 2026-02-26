@@ -111,6 +111,21 @@ const updateDepartment = asyncHandler(async (req, res) => {
     const before = { name: department.name, code: department.code };
     const { name, code, manager, leavePolicy } = req.body;
 
+    // Check for duplicate name or code (exclude self)
+    if (name || code) {
+        const dupFilter = { _id: { $ne: department._id } };
+        const orConditions = [];
+        if (name) orConditions.push({ name });
+        if (code) orConditions.push({ code: code.toUpperCase() });
+        if (orConditions.length > 0) {
+            dupFilter.$or = orConditions;
+            const duplicate = await Department.findOne(dupFilter);
+            if (duplicate) {
+                throw ApiError.conflict('Another department with this name or code already exists');
+            }
+        }
+    }
+
     if (name) department.name = name;
     if (code) department.code = code.toUpperCase();
     if (manager !== undefined) department.manager = manager;

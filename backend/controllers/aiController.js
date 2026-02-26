@@ -65,6 +65,11 @@ const getRejectionReasonHandler = asyncHandler(async (req, res) => {
 const getSmartSuggestionsHandler = asyncHandler(async (req, res) => {
     const { employeeId } = req.params;
 
+    // Employees can only view their own suggestions; managers/admins can view anyone's
+    if (req.user.role === 'employee' && req.user._id.toString() !== employeeId) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
     const suggestions = await getSmartSuggestions(employeeId);
 
     return ApiResponse.ok(res, 'Smart suggestions generated (data-driven)', { suggestions });

@@ -40,6 +40,12 @@ const createHoliday = asyncHandler(async (req, res) => {
 
     const { name, date, type, isRecurring } = req.body;
 
+    // Prevent duplicate holidays on the same date
+    const existingHoliday = await Holiday.findOne({ date: new Date(date) });
+    if (existingHoliday) {
+        throw ApiError.conflict(`A holiday already exists on this date: "${existingHoliday.name}"`);
+    }
+
     const holiday = await Holiday.create({
         name,
         date,

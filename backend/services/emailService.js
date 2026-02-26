@@ -137,4 +137,70 @@ const sendLeaveExpiredEmail = async (employeeEmail, employeeName, leaveType, sta
   return sendEmail({ to: employeeEmail, subject, html });
 };
 
-module.exports = { sendEmail, sendOTPEmail, sendLeaveStatusEmail, sendLeaveApplicationEmail, sendLeaveExpiredEmail };
+// ━━━ Reimbursement Email Notifications ━━━
+
+// Sends email when manager approves and forwards claim to admin
+const sendReimbursementManagerApprovedEmail = async (employeeEmail, employeeName, category, amount, approverName) => {
+  const subject = `Reimbursement Forwarded to Admin — ₹${amount.toLocaleString()} (${category})`;
+
+  const html = `
+    <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1C1917;">Reimbursement Update</h2>
+      <p>Hi ${employeeName},</p>
+      <p>Your <strong>${category}</strong> reimbursement claim for <strong>₹${amount.toLocaleString()}</strong> has been <strong>approved by your Manager (${approverName})</strong> and forwarded to Admin for final approval.</p>
+      <p style="color: #6B5E52;">No action needed from you — you'll be notified once Admin processes it.</p>
+      <hr style="border: 1px solid #DDD5CB; margin: 20px 0;" />
+      <p style="color: #6B5E52; font-size: 12px;">This is an automated notification from Leave Management System.</p>
+    </div>
+  `;
+
+  return sendEmail({ to: employeeEmail, subject, html });
+};
+
+// Sends email when claim receives final approval (by admin)
+const sendReimbursementApprovedEmail = async (employeeEmail, employeeName, category, amount, approverName) => {
+  const subject = `Reimbursement Approved — ₹${amount.toLocaleString()} (${category})`;
+
+  const html = `
+    <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1C1917;">Reimbursement Approved ✅</h2>
+      <p>Hi ${employeeName},</p>
+      <p>Your <strong>${category}</strong> reimbursement claim for <strong>₹${amount.toLocaleString()}</strong> has been <strong>approved</strong> by ${approverName}.</p>
+      <p>The reimbursement will be processed as per company policy.</p>
+      <hr style="border: 1px solid #DDD5CB; margin: 20px 0;" />
+      <p style="color: #6B5E52; font-size: 12px;">This is an automated notification from Leave Management System.</p>
+    </div>
+  `;
+
+  return sendEmail({ to: employeeEmail, subject, html });
+};
+
+// Sends email when claim is rejected
+const sendReimbursementRejectedEmail = async (employeeEmail, employeeName, category, amount, approverName, comment) => {
+  const subject = `Reimbursement Rejected — ₹${amount.toLocaleString()} (${category})`;
+
+  const html = `
+    <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1C1917;">Reimbursement Rejected ❌</h2>
+      <p>Hi ${employeeName},</p>
+      <p>Your <strong>${category}</strong> reimbursement claim for <strong>₹${amount.toLocaleString()}</strong> has been <strong>rejected</strong> by ${approverName}.</p>
+      ${comment ? `<p><em>Reason: "${comment}"</em></p>` : ''}
+      <p>If you believe this was in error, please contact your manager or admin.</p>
+      <hr style="border: 1px solid #DDD5CB; margin: 20px 0;" />
+      <p style="color: #6B5E52; font-size: 12px;">This is an automated notification from Leave Management System.</p>
+    </div>
+  `;
+
+  return sendEmail({ to: employeeEmail, subject, html });
+};
+
+module.exports = {
+  sendEmail,
+  sendOTPEmail,
+  sendLeaveStatusEmail,
+  sendLeaveApplicationEmail,
+  sendLeaveExpiredEmail,
+  sendReimbursementManagerApprovedEmail,
+  sendReimbursementApprovedEmail,
+  sendReimbursementRejectedEmail,
+};

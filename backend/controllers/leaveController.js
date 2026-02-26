@@ -46,6 +46,25 @@ const expireStaleLeaves = async () => {
             logger.error(`Failed to send expiry email for leave ${leave._id}: ${emailErr.message}`);
         }
 
+        // Create in-app notification + socket push for expiry
+        try {
+            const notification = await Notification.create({
+                recipient: leave.employee._id,
+                type: 'leave_expired',
+                message: `Your ${leave.leaveType} leave starting ${new Date(leave.startDate).toLocaleDateString()} has expired — the start date has already passed.`,
+                data: { leaveId: leave._id, status: 'expired', leaveType: leave.leaveType },
+            });
+
+            try {
+                const io = getIO();
+                io.to(`user-${leave.employee._id}`).emit('leave:expired', notification);
+            } catch (socketErr) {
+                logger.warn(`Socket notification failed for leave expiry: ${socketErr.message}`);
+            }
+        } catch (notifErr) {
+            logger.error(`Failed to create expiry notification for leave ${leave._id}: ${notifErr.message}`);
+        }
+
         // Audit the expiry
         try {
             await createAuditEntry({
