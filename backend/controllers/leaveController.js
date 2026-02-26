@@ -10,8 +10,58 @@ const { asyncHandler } = require('../middleware/authMiddleware');
 const { createAuditEntry } = require('../middleware/auditLogger');
 const { calculateLeaveDays, hasOverlap, validateBalance } = require('../utils/leaveCalculator');
 const { getIO } = require('../config/socket');
-const { sendLeaveApplicationEmail, sendLeaveStatusEmail } = require('../services/emailService');
+const { sendLeaveApplicationEmail, sendLeaveStatusEmail, sendLeaveExpiredEmail } = require('../services/emailService');
 const logger = require('../utils/logger');
+
+// ━━━ Expire stale pending leaves whose start date has already passed ━━━
+// Called before listing or processing leaves to ensure expired state is current.
+// Sends a one-time email notification per expired leave.
+const expireStaleLeaves = async () => {
+    const today = startOfDay(new Date());
+
+    // Find all pending leaves whose start date is before today
+    const staleLeaves = await Leave.find({
+        status: 'pending',
+        startDate: { $lt: today },
+    }).populate('employee', 'name email');
+
+    if (staleLeaves.length === 0) return;
+
+    for (const leave of staleLeaves) {
+        leave.status = 'expired';
+        leave.processedAt = new Date();
+        await leave.save();
+
+        // Send expiry email notification (fire-and-forget, never crash)
+        try {
+            if (leave.employee?.email) {
+                await sendLeaveExpiredEmail(
+                    leave.employee.email,
+                    leave.employee.name,
+                    leave.leaveType,
+                    new Date(leave.startDate).toLocaleDateString()
+                );
+            }
+        } catch (emailErr) {
+            logger.error(`Failed to send expiry email for leave ${leave._id}: ${emailErr.message}`);
+        }
+
+        // Audit the expiry
+        try {
+            await createAuditEntry({
+                actor: leave.employee._id,
+                action: 'UPDATE',
+                targetModel: 'Leave',
+                targetId: leave._id,
+                changes: { before: { status: 'pending' }, after: { status: 'expired', reason: 'Start date passed' } },
+            });
+        } catch (auditErr) {
+            logger.error(`Failed to create audit entry for expired leave ${leave._id}: ${auditErr.message}`);
+        }
+    }
+
+    logger.info(`Auto-expired ${staleLeaves.length} stale pending leave(s)`);
+};
 
 // ━━━ POST /api/leaves — Apply for leave ━━━
 const applyLeave = asyncHandler(async (req, res) => {
@@ -150,6 +200,8 @@ const applyLeave = asyncHandler(async (req, res) => {
 
 // ━━━ GET /api/leaves — List leaves with pagination, filtering, sorting ━━━
 const getLeaves = asyncHandler(async (req, res) => {
+    // Auto-expire stale pending leaves before listing
+    await expireStaleLeaves();
     const {
         page = 1,
         limit = 10,
@@ -242,6 +294,17 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
 
     if (!leave) {
         throw ApiError.notFound('Leave application not found');
+    }
+
+    // Auto-expire this leave if its start date has passed
+    if (leave.status === 'pending') {
+        const today = startOfDay(new Date());
+        if (startOfDay(new Date(leave.startDate)) < today) {
+            leave.status = 'expired';
+            leave.processedAt = new Date();
+            await leave.save();
+            throw ApiError.badRequest('This leave has expired — the start date has already passed');
+        }
     }
 
     if (leave.status !== 'pending') {

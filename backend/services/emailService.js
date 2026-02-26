@@ -119,4 +119,22 @@ const sendLeaveApplicationEmail = async (managerEmail, employeeName, leaveType, 
   return sendEmail({ to: managerEmail, subject, html });
 };
 
-module.exports = { sendEmail, sendOTPEmail, sendLeaveStatusEmail, sendLeaveApplicationEmail };
+// Sends leave expiry notification email to employee
+const sendLeaveExpiredEmail = async (employeeEmail, employeeName, leaveType, startDate) => {
+  const subject = `Leave Request Expired — ${leaveType}`;
+
+  const html = `
+    <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1C1917;">Leave Request Expired</h2>
+      <p>Hi ${employeeName},</p>
+      <p>Your <strong>${leaveType}</strong> leave request starting on <strong>${startDate}</strong> has <strong>expired</strong> because the leave start date has already passed without being processed.</p>
+      <p>If you still need time off, please submit a new leave application with future dates.</p>
+      <hr style="border: 1px solid #DDD5CB; margin: 20px 0;" />
+      <p style="color: #6B5E52; font-size: 12px;">This is an automated notification from Leave Management System.</p>
+    </div>
+  `;
+
+  return sendEmail({ to: employeeEmail, subject, html });
+};
+
+module.exports = { sendEmail, sendOTPEmail, sendLeaveStatusEmail, sendLeaveApplicationEmail, sendLeaveExpiredEmail };

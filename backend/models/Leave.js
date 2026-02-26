@@ -36,7 +36,7 @@ const leaveSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['pending', 'approved', 'rejected', 'cancelled'],
+            enum: ['pending', 'approved', 'rejected', 'cancelled', 'expired'],
             default: 'pending',
             index: true,
         },

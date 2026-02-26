@@ -1,0 +1,240 @@
+# 🎤 Presentation Script — AI-Powered Employee Leave Management System
+
+---
+
+## 🟢 SLIDE 1 — Opening / Introduction (30 seconds)
+
+> "Good [morning/afternoon], everyone. Today I'm going to present my project — an **AI-Powered Employee Leave Management System**.
+>
+> This is a full-stack web application that simulates how a real company manages employee leaves — from applying for time off, to manager approvals, to admin oversight. But what makes this project stand out is that it goes beyond a basic CRUD app — it includes **AI-powered features, real-time notifications, audit trail, and a premium UI** — essentially what you'd expect from a production-grade HR tool."
+
+---
+
+## 🟢 SLIDE 2 — Tech Stack (45 seconds)
+
+> "Let me quickly walk you through the tech stack.
+>
+> On the **backend**, I'm using **Node.js with Express.js** as the server framework, **MongoDB** as the database with **Mongoose** as the ODM, and **JWT** for authentication — both access tokens and refresh tokens.
+>
+> On the **frontend**, I'm using **React 18** bootstrapped with **Vite** for fast builds, **Tailwind CSS** for styling, **React Router v6** for routing, and **Context API** for global state management — exactly as required by the rubric.
+>
+> For additional features, I'm using **Socket.io** for real-time notifications, **Chart.js** for analytics dashboards, **Cloudinary** for cloud-based avatar uploads, and **Nodemailer** for email OTP verification.
+>
+> The AI features are all **rule-based and deterministic** — they don't need any external API key to work."
+
+---
+
+## 🟢 SLIDE 3 — Architecture Overview (45 seconds)
+
+> "The project follows a clean **industry-standard folder structure**.
+>
+> The backend is organized into **controllers, routes, models, middleware, services, and utils** — each with a single responsibility. For example, all authentication logic lives in [authController.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/controllers/authController.js), all leave operations in [leaveController.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/controllers/leaveController.js), and shared utilities like `ApiError` and `ApiResponse` ensure consistent responses across every endpoint.
+>
+> The frontend mirrors this with **pages, components (split into ui/ and layout/), contexts, services, and utils**. The API layer is centralized in a single [api.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/src/services/api.js) file with Axios interceptors that automatically attach tokens and handle refresh on 401 errors.
+>
+> I have **8 Mongoose models**: User, Leave, Department, Holiday, Notification, AuditLog, AIInsight, and Reimbursement — each with proper indexes, validations, and virtual fields."
+
+---
+
+## 🟢 SLIDE 4 — Authentication & Security (1 minute)
+
+> "Security was a major focus. The authentication system uses a **dual-token pattern**:
+>
+> - A short-lived **access token** (15-minute expiry) stored in memory
+> - A long-lived **refresh token** (7-day expiry) stored in an **HTTP-only cookie** — which means JavaScript can't access it, protecting against XSS attacks
+>
+> When a user logs in, the password is verified against a **bcrypt hash with 12 salt rounds**. If someone enters the wrong password **5 times**, their account gets **locked for 30 minutes** — this prevents brute-force attacks.
+>
+> On top of that, I have **rate limiting** — auth routes are restricted to 5 attempts per 15 minutes using `express-rate-limit`. Every API is protected with **Helmet.js** for security headers and **CORS** restricted to only the frontend origin.
+>
+> I also implemented **email OTP verification** during registration — a 6-digit OTP is sent via email and must be verified before the account is activated. And there's **Google OAuth** support for one-click sign-in.
+>
+> On logout, the refresh token is **blacklisted** using an in-memory Set — so even if someone steals it, it can't be reused."
+
+---
+
+## 🟢 SLIDE 5 — Role-Based Authorization (1 minute)
+
+> "The system has **three roles**: Employee, Manager, and Admin. Each role has different permissions and different dashboard views.
+>
+> On the **backend**, every protected route goes through two middleware layers:
+> 1. `protect` — verifies the JWT and attaches the user to the request
+> 2. [restrictTo('admin', 'manager')](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/middleware/roleMiddleware.js#3-23) — checks if the user's role is authorized for that endpoint. If not, a **403 Forbidden** error is returned.
+>
+> On the **frontend**, I built a `<ProtectedRoute>` component that wraps pages and accepts a `roles` prop. If a user tries to access a page they're not authorized for, they're redirected. The **sidebar navigation** also renders different menu items based on the logged-in user's role.
+>
+> For example:
+> - **Employees** see: Dashboard, Apply Leave, My Leaves, Reimbursements, AI Insights, Profile
+> - **Managers** see everything employees see plus: Leave History (to approve/reject), Team analytics
+> - **Admins** see everything plus: User Management, Department Management, Holiday Management, and Audit Logs
+>
+> Managers can only see leave requests from employees **in their own department** — they can't access other departments' data."
+
+---
+
+## 🟢 SLIDE 6 — Core Features Demo — Employee Flow (1.5 minutes)
+
+> "Let me walk you through the **employee experience**.
+>
+> When an employee logs in, they land on their **dashboard** which shows:
+> - Their **leave balance cards** — Annual, Sick, Personal, Maternity/Paternity — each showing remaining days
+> - A **burnout meter** — a circular gauge showing their burnout risk score from 0 to 100
+> - A **smart suggest banner** — if they haven't taken leave in 30+ days, it suggests optimal dates for a break
+> - Quick stats and recent leave history
+>
+> To **apply for leave**, they go to the Apply Leave page. Here they have two options:
+> 1. **Traditional form** — select leave type, start date, end date, reason
+> 2. **Natural Language Input** — they can type something like *'I need sick leave next Monday and Tuesday'* and the NLP parser automatically extracts the dates and leave type, pre-filling the form
+>
+> After applying, the leave goes into **Pending** status. The employee can track all their leaves on the **My Leaves** page with filters for status, type, and date range.
+>
+> Employees also have access to the **Reimbursement** feature where they can submit expense claims with amount, category, description, and receipt attachments. These go through an approval workflow similar to leaves.
+>
+> From their **Profile** page, they can update their avatar (uploaded to Cloudinary), change their password, and view their department details."
+
+---
+
+## 🟢 SLIDE 7 — Core Features Demo — Manager Flow (1 minute)
+
+> "When a **manager** logs in, their dashboard is more team-focused.
+>
+> They see a **Leave History** page where all pending leave requests from their department are listed. For each request, they can:
+> - **Approve** with a single click
+> - **Reject** with a comment explaining why
+>
+> The leave request table is **sortable, filterable, and paginated** — they can filter by status, leave type, or date range, and sort by any column.
+>
+> Managers also see **team analytics** — approval rate percentages, leave distribution charts by type (donut chart), monthly volume (bar chart), and which team members are currently on leave.
+>
+> They can also view their team's **burnout scores** to identify employees who might need a break."
+
+---
+
+## 🟢 SLIDE 8 — Core Features Demo — Admin Flow (1 minute)
+
+> "The **Admin Panel** is the most feature-rich.
+>
+> **User Management** — Admins can view all users in a searchable, paginated table. They can change user roles, activate/deactivate accounts, and assign users to departments.
+>
+> **Department Management** — Create, edit, and delete departments. Each department has a code, a manager assignment, and a configurable leave policy (how many annual, sick, personal days that department gets).
+>
+> **Holiday Management** — Admins can manage company holidays — add national, company, or regional holidays, mark them as recurring, and they automatically factor into leave calculations.
+>
+> **Audit Logs** — This is a compliance feature. Every state-changing action in the system is logged — who did it, what they did, which record was affected, what changed (before and after), their IP address, and timestamp. The audit log page has filters by user, action type, and date range, and can be **exported as CSV**. These records are immutable — they cannot be edited or deleted."
+
+---
+
+## 🟢 SLIDE 9 — AI Features (1.5 minutes)
+
+> "Now let me talk about what makes this project truly unique — the **AI-powered features**. All of these are rule-based and deterministic, so they work without any external API.
+>
+> **1. Burnout Risk Detection** — The system calculates a burnout score from 0 to 100 for each employee based on:
+> - Consecutive working days without leave
+> - Ratio of leaves taken vs available
+> - Sick leave frequency
+> - Leave pattern changes
+>
+> Scores are categorized as Low, Moderate, High, or Critical, and displayed as a circular gauge on the dashboard. Managers can see team burnout scores to proactively identify who needs a break.
+>
+> **2. NLP Leave Parser** — Instead of filling out a form, employees can type natural language like *'I need 3 days annual leave starting next Monday'* and the system uses regex patterns and date-fns to parse it into structured data — extracting the leave type, start date, end date, and total days.
+>
+> **3. AI Leave Advisor** — When applying for leave, the system analyzes the employee's balance, team availability, and upcoming holidays to suggest the best dates and gives a confidence score.
+>
+> **4. Smart Suggestions** — For employees who haven't taken leave in a while, the system calculates optimal leave windows based on adjacent weekends and public holidays, and shows them in a dismissible banner.
+>
+> All these features are accessible from the **AI Insights** page which shows a comprehensive view of all insights, scores, and recommendations."
+
+---
+
+## 🟢 SLIDE 10 — Real-Time Notifications (30 seconds)
+
+> "The system uses **Socket.io** for real-time notifications. When a leave is submitted, the manager gets an **instant notification** without page refresh. When a leave is approved or rejected, the employee gets notified immediately.
+>
+> The **notification bell** in the top bar shows an unread count badge that updates in real-time. Clicking it opens a notification panel where users can see their notification feed and mark items as read.
+>
+> Each user automatically joins a Socket.io room tied to their user ID, so notifications are delivered only to the intended recipient."
+
+---
+
+## 🟢 SLIDE 11 — UI/UX Design (45 seconds)
+
+> "The UI follows my custom **'Carbon & Citrus'** design system.
+>
+> It supports **dark and light themes** with smooth CSS variable transitions. The typography uses **DM Serif Display** for headings, **DM Sans** for body text, and **JetBrains Mono** for numbers and data — all from Google Fonts.
+>
+> The color palette is warm and purposeful — citrus orange for primary actions, forest green for approvals, rich red for rejections, and warm amber for warnings.
+>
+> Every page has **loading skeleton states**, **error handling**, and **empty states**. The sidebar is responsive — fixed on desktop, collapsible drawer on mobile. Page transitions are smooth with staggered fade-up animations.
+>
+> I also built reusable UI primitives — Button, Input, Card, Modal, Badge, Select, Loader, ErrorBoundary, Toast, and more — all in the `components/ui/` folder."
+
+---
+
+## 🟢 SLIDE 12 — Code Quality (30 seconds)
+
+> "On code quality:
+>
+> - Every function has a **comment explaining its purpose**
+> - No `console.log` anywhere — I use a **custom Winston-based logger**
+> - All API responses use a **standardized `ApiResponse` wrapper** with `{ success, statusCode, message, data }`
+> - Errors are handled with a **custom `ApiError` class** that extends Error
+> - Every async controller is wrapped in an **[asyncHandler](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/middleware/authMiddleware.js#6-10)** higher-order function — no repetitive try/catch blocks
+> - Magic strings are centralized in a **[constants.js](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/src/utils/constants.js)** file
+> - The frontend API layer uses **Axios interceptors** for automatic token attachment and 401 refresh logic
+> - All environment variables are in [.env](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/.env) with a [.env.example](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/.env.example) template"
+
+---
+
+## 🟢 SLIDE 13 — Database Design (30 seconds)
+
+> "The MongoDB database has **8 models**:
+>
+> - **User** — with leave balance, lockout fields, Google OAuth support, and virtuals
+> - **Leave** — with status workflow, manager comments, urgency flag, and compound indexes
+> - **Department** — with configurable leave policy per department
+> - **Holiday** — national, company, and regional types
+> - **Notification** — with flexible data payload for different notification types
+> - **AuditLog** — immutable action logs with before/after diffs
+> - **AIInsight** — burnout scores, recommendations, acknowledgment tracking
+> - **Reimbursement** — expense claims with approval workflow
+>
+> All models have proper **Mongoose indexes**, **validation rules**, **virtual fields**, and **pre-save hooks**."
+
+---
+
+## 🟢 SLIDE 14 — Deployment (20 seconds)
+
+> "The project is **deployment-ready**:
+> - Backend is configured for **Render.com** with proper start scripts
+> - Frontend has a **[vercel.json](file:///d:/debmr2/PROJECTS/leavemanagementsystem/frontend/vercel.json)** config for Vercel deployment
+> - MongoDB uses **MongoDB Atlas** cloud database
+> - Avatar images are stored on **Cloudinary** — no local file dependency
+> - All environment variables are centralized and documented in [.env.example](file:///d:/debmr2/PROJECTS/leavemanagementsystem/backend/.env.example)"
+
+---
+
+## 🟢 SLIDE 15 — Closing (20 seconds)
+
+> "To summarize — this is not just a leave management system. It's a **production-grade, AI-enhanced HR platform** with:
+> - Enterprise-level security (JWT rotation, rate limiting, account lockout, OTP verification)
+> - Complete role-based access control across frontend and backend
+> - AI features (burnout detection, NLP parsing, smart suggestions)
+> - Real-time notifications
+> - Full audit trail
+> - Reimbursement management
+> - Premium UI with dark/light themes
+>
+> Thank you! I'm happy to take any questions or do a live demo."
+
+---
+
+## 💡 Quick Q&A Prep — Likely Questions
+
+| Question | Answer |
+|---|---|
+| *"Why JWT instead of sessions?"* | "JWT is stateless — scales better, no server-side session store needed. Refresh token rotation adds security." |
+| *"Why rule-based AI instead of real AI?"* | "Rule-based is deterministic, requires no API key or cost, works offline, and is more predictable for an HR system where reliability matters." |
+| *"How do you prevent XSS?"* | "Helmet.js sets security headers, refresh tokens are in HTTP-only cookies so JS can't access them, and all user inputs are sanitized with express-validator." |
+| *"What happens if the access token expires?"* | "The Axios interceptor catches the 401, calls the refresh endpoint using the HTTP-only cookie, gets a new access token, and retries the original request — all transparent to the user." |
+| *"How is the burnout score calculated?"* | "It's a weighted formula based on consecutive working days, leave utilization ratio, sick leave frequency, and leave pattern changes. Each factor has a weight, and the final score is normalized to 0–100." |
+| *"Can managers see other departments?"* | "No. The backend filters leave requests by the manager's department. Even if they try to call the API directly, they only get their department's data." |

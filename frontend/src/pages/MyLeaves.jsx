@@ -22,6 +22,7 @@ const statusOptions = [
     { value: 'approved', label: 'Approved' },
     { value: 'rejected', label: 'Rejected' },
     { value: 'cancelled', label: 'Cancelled' },
+    { value: 'expired', label: 'Expired' },
 ];
 
 export default function MyLeaves() {
@@ -227,7 +228,8 @@ export default function MyLeaves() {
                                                 <Badge variant={
                                                     leave.status === 'approved' ? 'success' :
                                                         leave.status === 'rejected' ? 'danger' :
-                                                            leave.status === 'cancelled' ? 'neutral' : 'warning'
+                                                            leave.status === 'cancelled' ? 'neutral' :
+                                                                leave.status === 'expired' ? 'danger' : 'warning'
                                                 }>
                                                     {capitalize(leave.status)}
                                                 </Badge>
@@ -283,7 +285,8 @@ export default function MyLeaves() {
                             <div><span className="text-txt-muted">Status:</span> <Badge variant={
                                 selectedLeave.status === 'approved' ? 'success' :
                                     selectedLeave.status === 'rejected' ? 'danger' :
-                                        selectedLeave.status === 'cancelled' ? 'neutral' : 'warning'
+                                        selectedLeave.status === 'cancelled' ? 'neutral' :
+                                            selectedLeave.status === 'expired' ? 'danger' : 'warning'
                             }>{capitalize(selectedLeave.status)}</Badge></div>
                             <div><span className="text-txt-muted">Applied:</span> <span className="text-txt-primary">{timeAgo(selectedLeave.appliedAt)}</span></div>
                             <div className="col-span-2"><span className="text-txt-muted">Dates:</span> <span className="text-txt-primary">{formatDate(selectedLeave.startDate)} — {formatDate(selectedLeave.endDate)}</span></div>

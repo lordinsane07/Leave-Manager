@@ -38,6 +38,7 @@ export const STATUS = {
     APPROVED: 'approved',
     REJECTED: 'rejected',
     CANCELLED: 'cancelled',
+    EXPIRED: 'expired',
 };
 
 // ━━━ Socket event names ━━━

@@ -39,7 +39,7 @@ const reimbursementSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['pending', 'approved', 'rejected', 'cancelled'],
+            enum: ['pending', 'manager_approved', 'approved', 'rejected', 'cancelled'],
             default: 'pending',
             index: true,
         },

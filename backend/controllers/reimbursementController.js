@@ -79,6 +79,8 @@ const getClaimById = asyncHandler(async (req, res) => {
 });
 
 // ━━━ PATCH /api/reimbursements/:id/status — Approve / Reject ━━━
+// Two-level flow: Employee claims require Manager approval then Admin final approval.
+// Manager claims go directly to Admin.
 const updateStatus = asyncHandler(async (req, res) => {
     const { status, approverComment } = req.body;
 
@@ -91,22 +93,50 @@ const updateStatus = asyncHandler(async (req, res) => {
         throw ApiError.forbidden('Employees cannot approve or reject claims');
     }
 
-    const claim = await Reimbursement.findById(req.params.id);
+    const claim = await Reimbursement.findById(req.params.id).populate('employee', 'name email role');
     if (!claim) throw ApiError.notFound('Claim not found');
 
-    if (claim.status !== 'pending') {
+    // Valid statuses for processing
+    if (!['pending', 'manager_approved'].includes(claim.status)) {
         throw ApiError.badRequest(`Cannot ${status} a claim that is already ${claim.status}`);
     }
 
-    claim.status = status;
+    // Manager-specific guards
+    if (req.user.role === 'manager') {
+        // Managers cannot process claims that are already manager-approved (awaiting admin)
+        if (claim.status === 'manager_approved') {
+            throw ApiError.forbidden('This claim is already approved by a manager. Final approval can only be performed by Admin.');
+        }
+        // Managers cannot process other managers' claims
+        if (claim.employee.role === 'manager') {
+            throw ApiError.forbidden('Manager claims can only be processed by Admin');
+        }
+    }
+
+    // Determine the resulting status
+    let resultStatus = status;
+    let responseMessage = `Claim ${status} successfully`;
+
+    if (status === 'approved') {
+        if (req.user.role === 'manager' && claim.employee.role === 'employee') {
+            // Manager approving employee claim → intermediate state
+            resultStatus = 'manager_approved';
+            responseMessage = 'Reimbursement approved by Manager and forwarded to Admin for final approval';
+        }
+        // Admin approving (pending or manager_approved) → final approval
+        // resultStatus stays 'approved'
+    }
+    // Rejection at any stage by manager or admin → final rejected
+
+    claim.status = resultStatus;
     claim.approvedBy = req.user._id;
     claim.approverComment = approverComment || '';
     claim.processedAt = new Date();
     await claim.save();
 
-    logger.info(`Reimbursement ${claim._id} ${status} by ${req.user.name}`);
+    logger.info(`Reimbursement ${claim._id} ${resultStatus} by ${req.user.name} (${req.user.role})`);
 
-    return ApiResponse.ok(res, `Claim ${status} successfully`, { claim });
+    return ApiResponse.ok(res, responseMessage, { claim });
 });
 
 // ━━━ PATCH /api/reimbursements/:id/cancel — Employee cancels own ━━━
@@ -118,8 +148,8 @@ const cancelClaim = asyncHandler(async (req, res) => {
         throw ApiError.forbidden('You can only cancel your own claims');
     }
 
-    if (claim.status !== 'pending') {
-        throw ApiError.badRequest('Only pending claims can be cancelled');
+    if (!['pending', 'manager_approved'].includes(claim.status)) {
+        throw ApiError.badRequest('Only pending or manager-approved claims can be cancelled');
     }
 
     claim.status = 'cancelled';
@@ -141,8 +171,9 @@ const getStats = asyncHandler(async (req, res) => {
         filter.employee = { $in: teamMembers.map(m => m._id) };
     }
 
-    const [pending, approved, totalApproved] = await Promise.all([
+    const [pending, managerApproved, approved, totalApproved] = await Promise.all([
         Reimbursement.countDocuments({ ...filter, status: 'pending' }),
+        Reimbursement.countDocuments({ ...filter, status: 'manager_approved' }),
         Reimbursement.countDocuments({ ...filter, status: 'approved' }),
         Reimbursement.aggregate([
             { $match: { ...filter, status: 'approved' } },
@@ -152,7 +183,8 @@ const getStats = asyncHandler(async (req, res) => {
 
     return ApiResponse.ok(res, 'Reimbursement stats', {
         stats: {
-            pending,
+            pending: pending + managerApproved,
+            managerApproved,
             approved,
             totalApprovedAmount: totalApproved[0]?.total || 0,
         },

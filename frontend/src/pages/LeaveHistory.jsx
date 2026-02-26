@@ -22,6 +22,7 @@ const statusOptions = [
     { value: 'approved', label: 'Approved' },
     { value: 'rejected', label: 'Rejected' },
     { value: 'cancelled', label: 'Cancelled' },
+    { value: 'expired', label: 'Expired' },
 ];
 
 const typeOptions = [

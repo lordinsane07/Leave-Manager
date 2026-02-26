@@ -29,10 +29,20 @@ const categoryOptions = [
 const statusOptions = [
     { value: '', label: 'All Statuses' },
     { value: 'pending', label: 'Pending' },
+    { value: 'manager_approved', label: 'Pending Admin Approval' },
     { value: 'approved', label: 'Approved' },
     { value: 'rejected', label: 'Rejected' },
     { value: 'cancelled', label: 'Cancelled' },
 ];
+
+// Human-readable status labels
+const statusLabels = {
+    pending: 'Pending',
+    manager_approved: 'Pending Admin Approval',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    cancelled: 'Cancelled',
+};
 
 const categoryLabels = {
     travel: '✈️ Travel', medical: '🏥 Medical', food: '🍽️ Food',
@@ -283,19 +293,28 @@ export default function Reimbursements() {
                                             <td className="px-4 py-3 text-xs text-txt-muted">{formatDate(claim.expenseDate)}</td>
                                             <td className="px-4 py-3">
                                                 <Badge variant={claim.status === 'approved' ? 'success' : claim.status === 'rejected' ? 'danger' : claim.status === 'cancelled' ? 'neutral' : 'warning'}>
-                                                    {capitalize(claim.status)}
+                                                    {statusLabels[claim.status] || capitalize(claim.status)}
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3 text-xs text-txt-muted">{timeAgo(claim.submittedAt)}</td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-1.5">
-                                                    {isManager && claim.status === 'pending' && (
+                                                    {/* Manager can approve/reject only 'pending' employee claims */}
+                                                    {user?.role === 'manager' && claim.status === 'pending' && (
                                                         <>
                                                             <Button size="sm" variant="success" onClick={() => handleAction(claim._id, 'approved')}>✓</Button>
                                                             <Button size="sm" variant="danger" onClick={() => setSelectedClaim(claim)}>✗</Button>
                                                         </>
                                                     )}
-                                                    {!isManager && claim.status === 'pending' && (
+                                                    {/* Admin can approve/reject 'pending' and 'manager_approved' claims */}
+                                                    {user?.role === 'admin' && (claim.status === 'pending' || claim.status === 'manager_approved') && (
+                                                        <>
+                                                            <Button size="sm" variant="success" onClick={() => handleAction(claim._id, 'approved')}>✓</Button>
+                                                            <Button size="sm" variant="danger" onClick={() => setSelectedClaim(claim)}>✗</Button>
+                                                        </>
+                                                    )}
+                                                    {/* Employee can cancel pending or manager_approved claims */}
+                                                    {!isManager && (claim.status === 'pending' || claim.status === 'manager_approved') && (
                                                         <Button size="sm" variant="ghost" onClick={() => setCancelConfirm(claim)}>Cancel</Button>
                                                     )}
                                                     <button className="text-xs text-accent hover:underline" onClick={() => setSelectedClaim(claim)}>View</button>
@@ -391,7 +410,7 @@ export default function Reimbursements() {
                             <div><span className="text-txt-muted">Employee:</span> <span className="text-txt-primary font-medium">{selectedClaim.employee?.name}</span></div>
                             <div><span className="text-txt-muted">Category:</span> <span className="text-txt-primary">{categoryLabels[selectedClaim.category]}</span></div>
                             <div><span className="text-txt-muted">Amount:</span> <span className="text-txt-primary font-bold">₹{selectedClaim.amount.toLocaleString()}</span></div>
-                            <div><span className="text-txt-muted">Status:</span> <Badge variant={selectedClaim.status === 'approved' ? 'success' : selectedClaim.status === 'rejected' ? 'danger' : 'warning'}>{capitalize(selectedClaim.status)}</Badge></div>
+                            <div><span className="text-txt-muted">Status:</span> <Badge variant={selectedClaim.status === 'approved' ? 'success' : selectedClaim.status === 'rejected' ? 'danger' : 'warning'}>{statusLabels[selectedClaim.status] || capitalize(selectedClaim.status)}</Badge></div>
                             <div className="col-span-2"><span className="text-txt-muted">Expense Date:</span> <span className="text-txt-primary">{formatDate(selectedClaim.expenseDate)}</span></div>
                             <div className="col-span-2"><span className="text-txt-muted">Description:</span> <span className="text-txt-primary">{selectedClaim.description}</span></div>
                             {selectedClaim.receiptUrl && (
@@ -409,7 +428,23 @@ export default function Reimbursements() {
                         </div>
 
                         {/* Approve/Reject for managers */}
-                        {isManager && selectedClaim.status === 'pending' && (
+                        {/* Manager: approve/reject only pending claims */}
+                        {user?.role === 'manager' && selectedClaim.status === 'pending' && (
+                            <div className="border-t border-border pt-4 space-y-3">
+                                <textarea
+                                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-txt-primary placeholder:text-txt-muted focus:outline-none focus:ring-2 focus:ring-accent/20 min-h-[80px] resize-none"
+                                    placeholder="Comment (optional)..."
+                                    value={approverComment}
+                                    onChange={(e) => setApproverComment(e.target.value)}
+                                />
+                                <div className="flex justify-end gap-2">
+                                    <Button size="sm" variant="success" onClick={() => handleAction(selectedClaim._id, 'approved')}>Approve</Button>
+                                    <Button size="sm" variant="danger" onClick={() => handleAction(selectedClaim._id, 'rejected')}>Reject</Button>
+                                </div>
+                            </div>
+                        )}
+                        {/* Admin: approve/reject pending and manager_approved claims */}
+                        {user?.role === 'admin' && (selectedClaim.status === 'pending' || selectedClaim.status === 'manager_approved') && (
                             <div className="border-t border-border pt-4 space-y-3">
                                 <textarea
                                     className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-txt-primary placeholder:text-txt-muted focus:outline-none focus:ring-2 focus:ring-accent/20 min-h-[80px] resize-none"
