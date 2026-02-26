@@ -16,6 +16,16 @@ const {
 const submitClaim = asyncHandler(async (req, res) => {
     const { category, amount, description, receiptUrl, expenseDate } = req.body;
 
+    // Reimbursements are only for past or present expenses — not future dates
+    if (expenseDate) {
+        const expense = new Date(expenseDate);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // end of today
+        if (expense > today) {
+            throw ApiError.badRequest('Expense date cannot be in the future. Reimbursements are only for expenses already incurred.');
+        }
+    }
+
     const claim = await Reimbursement.create({
         employee: req.user._id,
         category,
