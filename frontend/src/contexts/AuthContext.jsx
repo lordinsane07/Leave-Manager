@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, useCallback } from 'react';
+import axios from 'axios';
 import { authService } from '../services';
+import { API_BASE_URL } from '../utils/constants';
 
 const AuthContext = createContext(null);
 
@@ -58,6 +60,36 @@ export function AuthProvider({ children }) {
         };
         checkAuth();
     }, []);
+
+    // Proactive silent token refresh — runs every 12 minutes while authenticated.
+    // Prevents the 401→retry cycle by refreshing BEFORE the 15-min access token expires.
+    useEffect(() => {
+        if (!state.isAuthenticated) return;
+
+        const REFRESH_INTERVAL = 12 * 60 * 1000; // 12 minutes
+
+        const silentRefresh = async () => {
+            try {
+                // Use raw axios to bypass the api interceptor's 401 handler
+                const { data } = await axios.post(
+                    `${API_BASE_URL}/auth/refresh`,
+                    {},
+                    { withCredentials: true }
+                );
+                const newToken = data.data?.accessToken;
+                if (newToken) {
+                    localStorage.setItem('accessToken', newToken);
+                }
+            } catch {
+                // Refresh failed — session has truly expired, log out
+                localStorage.removeItem('accessToken');
+                dispatch({ type: ACTIONS.LOGOUT });
+            }
+        };
+
+        const intervalId = setInterval(silentRefresh, REFRESH_INTERVAL);
+        return () => clearInterval(intervalId);
+    }, [state.isAuthenticated]);
 
     const login = useCallback(async (credentials) => {
         dispatch({ type: ACTIONS.SET_LOADING, payload: true });

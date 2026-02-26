@@ -28,10 +28,11 @@ const generateRefreshToken = (userId) => {
 
 // Sets refresh token as HTTP-only cookie on response
 const setRefreshCookie = (res, token) => {
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('refreshToken', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: isProduction,                // HTTPS only in production
+        sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin (Vercel→Render)
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 };

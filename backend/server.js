@@ -4,6 +4,7 @@ const http = require('http');
 const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const { configureCloudinary } = require('./config/cloudinary');
 const { initSocket } = require('./config/socket');
@@ -59,6 +60,7 @@ app.use(cors({
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser()); // Parse cookies so req.cookies works for refresh tokens
 
 // Serve uploaded files (avatars, etc.)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
